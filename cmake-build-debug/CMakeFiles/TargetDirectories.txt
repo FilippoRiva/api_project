@@ -1,0 +1,3 @@
+/home/phil/CLionProjects/api/cmake-build-debug/CMakeFiles/api.dir
+/home/phil/CLionProjects/api/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/phil/CLionProjects/api/cmake-build-debug/CMakeFiles/rebuild_cache.dir
