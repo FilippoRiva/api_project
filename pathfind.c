@@ -1,7 +1,5 @@
 #include "data.c"
 
-bool checkReverseRunningCars();
-
 void recursivePrintSolution(station *currentNode, int initialPosition, int endPosition) {
     if(currentNode->position == initialPosition) {
         printf("%d ",initialPosition);
@@ -119,35 +117,3 @@ void reverseFindPath(int initialPosition, int endPosition) {
     }
     clearReverseRunningCarList();
 }
-
-bool checkReverseRunningCars() {
-    int size = reverseRunningCarList.size;
-    //printf("\nCurrent size : %d",size);
-    int counter = 0;
-    reverseRunningCar *curr = reverseRunningCarList.first;
-    for(int i = 0; i < reverseRunningCarList.size; i++){
-        if(curr==NULL) {
-            //printf("NOPE\n");
-            return false;
-        }
-        counter++;
-        //printf("p %d a %d c %d\n",curr->startStation->position,curr->autonomy,curr->neededChanges);
-        if(curr->nextCar == NULL && i != reverseRunningCarList.size-1){
-            //printf("NOPE\n");
-            return false;
-        }
-        if(counter == size){
-            if(curr!=reverseRunningCarList.last){
-                //printf("NOPE\n");
-                return false;
-            }
-        }
-        curr = curr->nextCar;
-    }
-    if(counter != size) {
-        //printf("NOPE\n");
-        return false;
-    }
-    return true;
-}
-

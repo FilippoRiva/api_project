@@ -1,13 +1,11 @@
 #include <stdlib.h>
 #include "structs.c"
 
-struct Station *deleteSuccessorDuplicate(station *station);
+//returns the next node;
+station *deleteSuccessorDuplicate(station *station);
 
 //add station to the highwayTree creating a maxHeap using the maxHeap utilities
 station *addStation(int position, unsigned short int carCount, unsigned short int capacity, int *initialCars);
-
-//returns the next node;
-station *deleteSuccessorDuplicate(station *station);
 
 //returns a station if the station exists, NULL otherwise.
 station *getStation(int position);
@@ -42,7 +40,6 @@ void fixMaxHeapInsert(maxHeap *heap, int idx);
 //addCars to the runningCarsList;
 void addCarToRunningCarList(int autonomy, station* startStation);
 
-void printTree(station* station, int space);
 
 
 //tree utils -----------------------------------------------------------------------------------------------------
@@ -219,15 +216,6 @@ station *deleteSuccessorDuplicate(station *station) {
 
     station->rightChild = NULL;
     return station;
-}
-
-station* getHighwayMin(){
-    station* currentNode = highwayTree.root;
-    if(currentNode==NULL) return NULL;
-    while(currentNode->leftChild!=NULL){
-        currentNode = currentNode->leftChild;
-    }
-    return currentNode;
 }
 
 //max heap utils -----------------------------------------------------------------------------------------------------
@@ -456,48 +444,4 @@ reverseRunningCar *calculateBestReverseRunningCar(station* currentStation){
         }
     }
     return bestCar;
-}
-
-//-------------------------- to remove
-
-void printReverseList(station* position){
-    if(position == NULL) return;
-    int size = reverseRunningCarList.size;
-    int counter = 0;
-    reverseRunningCar *car = reverseRunningCarList.first;
-    printf("printing cars at position %d\n",position->position);
-    while(car != NULL){
-        counter++;
-        printf("st : %d, aut : %d, c : %d\n", car->startStation->position, car->autonomy, car->neededChanges);
-        car= car->nextCar;
-    }
-    if(counter != size) {
-        printf("What\n");
-    }
-    printf("\n");
-}
-
-void printList(){
-    station * min = getHighwayMin();
-    int prev = -1;
-    while(min!=NULL){
-        //printf("%d ",min->position);
-        if(prev > min->position) printf("!!! %d minor than %d",prev, min->position);
-        min= min->nextStation;
-    }
-    printf("\n");
-}
-
-void printTree(station* station, int space){
-    if(station == NULL) return;
-    space += 3;
-    printTree(station->rightChild,space);
-    for(int i = 0; i < space; i++) printf(" ");
-    printf("%d\n",station->position);
-    printTree(station->leftChild,space);
-}
-
-void printInfo(){
-    //printList();
-    //printTree(highwayTree.root,0);
 }

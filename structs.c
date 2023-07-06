@@ -48,9 +48,6 @@ struct ReverseRunningCarList {
     int size;
 } reverseRunningCarList;
 
-void freeStation(station *station){
-}
-
 void fullFreeStation(station *station){
     free(station->carsMaxHeap->cars);
     free(station->carsMaxHeap);

@@ -22,7 +22,7 @@ char* concat(const char* a, const char* b, const char* c){
 }
 
 int main() {
-    int firstTest = 101;
+    int firstTest = 111;
     int lastTest = 111;
     for(int i = firstTest; i <= lastTest; i++){
         char path[40] = "/home/phil/CLionProjects/api/test/open_\0";
@@ -120,42 +120,13 @@ void readInput(){
         //printf("line = %d",counter);
         //};
     }
-    //printInfo();
-    station* currentStation = getHighwayMin();
+    /*
     while(currentStation->nextStation!=NULL){
         station* toFree = currentStation;
         currentStation = currentStation->nextStation;
         fullFreeStation(toFree);
     }
-}
-
-bool checkList() {
-    station* curr = getHighwayMin();
-    int prevValue = -1;
-    station *revcurr;
-    while(curr!=NULL){
-        //printf("%d ",curr->position);
-        if(curr->position < prevValue) {
-            printf("%d is mis-ordered",curr->position);
-            exit(-1);
-        }
-        prevValue = curr->position;
-        if(curr->nextStation == NULL) revcurr = curr;
-        curr = curr->nextStation;
-    }
-    //printf("\n%d ",revcurr->position);
-    revcurr = revcurr->prevStation;
-    while(revcurr!=NULL){
-        //printf("%d ",revcurr->position);
-        if(revcurr->position > prevValue) {
-            printf("%d is mis-ordered",curr->position);
-            exit(-1);
-        }
-        prevValue = revcurr->position;
-        revcurr = revcurr->prevStation;
-    }
-    //printf("\n");
-    return true;
+     */
 }
 
 void moveCursor(int positions) {
