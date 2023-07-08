@@ -1,5 +1,7 @@
 #include "data.c"
 
+void printList(station* currentStation);
+
 void recursivePrintSolution(station *currentNode, int initialPosition, int endPosition) {
     if(currentNode->position == initialPosition) {
         printf("%d ",initialPosition);
@@ -70,10 +72,6 @@ void reverseFindPath(int initialPosition, int endPosition) {
     addCarToReverseRunningCarList(firstStation->carsMaxHeap->cars[0],firstStation);
     currentStation = firstStation->prevStation;
     while(true){
-        //checkReverseRunningCars();
-        //printf("pre erase\n");
-        //printReverseList(currentStation);
-
         //no end station
         if(currentStation == NULL || currentStation->position < endPosition){
             printf("nessun percorso\n");
@@ -81,11 +79,8 @@ void reverseFindPath(int initialPosition, int endPosition) {
         }
 
         //erasing dead cars
-        //printReverseList(currentStation);
         reverseHeadDeleteDeadCars(currentStation);
-        //checkReverseRunningCars();
-
-        //printReverseList(currentStation);
+        printList(currentStation);
 
         //impossible path
         if(reverseRunningCarList.size == 0){
@@ -94,11 +89,8 @@ void reverseFindPath(int initialPosition, int endPosition) {
         }
 
         //calculating best car
-        //printReverseList(currentStation);
         reverseRunningCar *bestCar = calculateBestReverseRunningCar(currentStation);
-        //checkReverseRunningCars();
-
-        //printf("Best car found : pos %d, aut %d, ch %d\n",bestCar->startStation->position, bestCar->autonomy, bestCar->neededChanges);
+        printList(currentStation);
 
         //updating best prev station
         currentStation->bestPreviousStation = bestCar->startStation;
@@ -111,9 +103,34 @@ void reverseFindPath(int initialPosition, int endPosition) {
 
         //adding new car
         addCarToReverseRunningCarList(currentStation->carsMaxHeap->cars[0],currentStation);
-        //checkReverseRunningCars();
+        printList(currentStation);
 
         currentStation = currentStation->prevStation;
     }
     clearReverseRunningCarList();
+}
+
+void printList(station* currentStation) {
+    if(!DEBUG) return;
+    int counter = 0;
+    reverseRunningCar *current = reverseRunningCarList.first;
+    while(current!=NULL){
+        printf("pos : %d aut : %d c : %d\n",current->startStation->position, current->autonomy, current->neededChanges);
+        counter ++;
+        if(counter == reverseRunningCarList.size){
+            if(current != reverseRunningCarList.last){
+                printf("current station : %d\n", currentStation->position);
+                exit(-1);
+            }
+        }
+        current = current->nextCar;
+        if(counter> reverseRunningCarList.size) {
+            printf("current station : %d\n", currentStation->position);
+            exit(-1);
+        }
+    }
+    if(counter!=reverseRunningCarList.size){
+        printf("current station : %d\n", currentStation->position);
+        exit(-1);
+    }
 }

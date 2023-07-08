@@ -51,6 +51,8 @@ int main() {
         reverseRunningCarList.first = NULL;
         reverseRunningCarList.last = NULL;
         reverseRunningCarList.size = 0;
+        reverseRunningCarList.currentBestCar = NULL;
+        reverseRunningCarList.nextBestCar = NULL;
         highwayTree.root = NULL;
 
         readInput();

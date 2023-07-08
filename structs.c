@@ -39,12 +39,15 @@ struct ReverseRunningCar {
     int autonomy;
     int neededChanges;
     reverseRunningCar *nextCar;
+    reverseRunningCar *prevCar;
     station *startStation;
 };
 
 struct ReverseRunningCarList {
     reverseRunningCar *first;
     reverseRunningCar *last;
+    reverseRunningCar *currentBestCar;
+    reverseRunningCar *nextBestCar;
     int size;
 } reverseRunningCarList;
 

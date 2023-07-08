@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "structs.c"
+#define DEBUG false
 
 //returns the next node;
 station *deleteSuccessorDuplicate(station *station);
@@ -341,16 +342,21 @@ void addCarToReverseRunningCarList(int autonomy, station* startStation){
     newCar->startStation = startStation;
     newCar->nextCar = NULL;
     if(reverseRunningCarList.first==NULL){
+        newCar->prevCar = NULL;
         newCar->neededChanges = 0;
         reverseRunningCarList.first = newCar;
         reverseRunningCarList.last = newCar;
         reverseRunningCarList.size = 1;
+        reverseRunningCarList.currentBestCar = newCar;
+        reverseRunningCarList.nextBestCar = NULL;
         return;
     } else {
         newCar->neededChanges = reverseRunningCarList.first->neededChanges+1;
         reverseRunningCarList.last->nextCar = newCar;
+        newCar->prevCar = reverseRunningCarList.last;
         reverseRunningCarList.last = newCar;
         reverseRunningCarList.size++;
+        reverseRunningCarList.nextBestCar = newCar;
         return;
     }
 }
@@ -371,16 +377,25 @@ void deleteDeadCars(station* currentStation){
 
 void reverseHeadDeleteDeadCars(station* currentStation){
     int initialSize = reverseRunningCarList.size;
+    int minChanges = reverseRunningCarList.first->neededChanges;
     for(int i = 0; i < initialSize; i++){
         if(reverseRunningCarList.first->startStation->position - reverseRunningCarList.first->autonomy > currentStation->position){
-           reverseRunningCar *toFree = reverseRunningCarList.first;
+            reverseRunningCar *toFree = reverseRunningCarList.first;
             if(reverseRunningCarList.first == reverseRunningCarList.last) {
-                //printf("LASTFIRST Erasing pos : %d aut : %d c : %d",reverseRunningCarList.first->startStation->position, reverseRunningCarList.first->autonomy, reverseRunningCarList.first->neededChanges);
+                if(DEBUG) printf("LASTFIRST Erasing pos : %d aut : %d c : %d\n",reverseRunningCarList.first->startStation->position, reverseRunningCarList.first->autonomy, reverseRunningCarList.first->neededChanges);
                 reverseRunningCarList.last = NULL;
                 reverseRunningCarList.first = NULL;
+                reverseRunningCarList.currentBestCar = NULL;
+                reverseRunningCarList.nextBestCar = NULL;
             } else {
-                //printf("FIRST Erasing pos : %d aut : %d c : %d",reverseRunningCarList.first->startStation->position, reverseRunningCarList.first->autonomy, reverseRunningCarList.first->neededChanges);
+                if(DEBUG) printf("FIRST Erasing pos : %d aut : %d c : %d\n",reverseRunningCarList.first->startStation->position, reverseRunningCarList.first->autonomy, reverseRunningCarList.first->neededChanges);
                 reverseRunningCarList.first = reverseRunningCarList.first->nextCar;
+                reverseRunningCarList.first->prevCar = NULL;
+                if(reverseRunningCarList.first->neededChanges > minChanges){
+                    reverseRunningCarList.currentBestCar = reverseRunningCarList.nextBestCar;
+                    minChanges = reverseRunningCarList.currentBestCar->neededChanges;
+                    reverseRunningCarList.nextBestCar = NULL;
+                }
             }
             free(toFree);
             reverseRunningCarList.size--;
@@ -411,10 +426,27 @@ void clearReverseRunningCarList(){
     reverseRunningCarList.size = 0;
     reverseRunningCarList.first = NULL;
     reverseRunningCarList.last= NULL;
+    reverseRunningCarList.currentBestCar = NULL;
+    reverseRunningCarList.nextBestCar = NULL;
 }
 
 reverseRunningCar *calculateBestReverseRunningCar(station* currentStation){
-    reverseRunningCar *bestCar = reverseRunningCarList.first;
+    reverseRunningCar *bestCar = reverseRunningCarList.currentBestCar;
+    while(bestCar->startStation->position - bestCar->autonomy > currentStation->position){
+        bestCar->prevCar->nextCar = bestCar->nextCar;
+        if(DEBUG) printf("While searching best : erasing pos : %d\n",bestCar->startStation->position);
+        if(bestCar->nextCar != NULL) bestCar->nextCar->prevCar = bestCar->prevCar;
+        reverseRunningCar *toFree = bestCar;
+        bestCar = bestCar->prevCar;
+        reverseRunningCarList.currentBestCar = bestCar;
+        if(reverseRunningCarList.last == toFree){
+            reverseRunningCarList.last = bestCar;
+        }
+        free(toFree);
+        reverseRunningCarList.size --;
+    }
+    return bestCar;
+    /*
     reverseRunningCar *currentCar = bestCar;
     reverseRunningCar *prevCar = NULL;
     int initialSize = reverseRunningCarList.size;
@@ -443,5 +475,6 @@ reverseRunningCar *calculateBestReverseRunningCar(station* currentStation){
             currentCar = currentCar->nextCar;
         }
     }
+     */
     return bestCar;
 }
