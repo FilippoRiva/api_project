@@ -1,162 +1,177 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
-#include <string.h>
 #include <stdlib.h>
-typedef struct Station station;
-typedef struct MaxHeap maxHeap;
-typedef struct RunningCar runningCar;
-typedef struct ReverseRunningCar reverseRunningCar;
 
-struct Station {
+#pragma GCC optimize ("Ofast","unroll-loops")
+#pragma GCC target ("bmi")
+
+typedef struct station station;
+typedef struct max_heap max_heap;
+typedef struct running_car running_car;
+typedef struct reverse_running_car reverse_running_car;
+
+struct station {
     int position;
-    maxHeap *carsMaxHeap;
-    station *nextStation;
-    station *prevStation;
-    station *leftChild;
-    station *rightChild;
-    station *bestPreviousStation;
+    max_heap *cars_max_heap;
+    station *next_station;
+    station *prev_station;
+    station *left_child;
+    station *right_child;
+    station *best_previous_station;
 };
 
-struct HighwayTree {
+struct highway_tree {
     station *root;
-} highwayTree;
+} highway_tree;
 
-struct MaxHeap {
+struct max_heap {
     int *cars;
-    int size;
-    int capacity;
+    u_int16_t size;
+    u_int16_t capacity;
 };
 
-struct RunningCar {
+struct running_car {
     int autonomy;
-    station *startStation;
-    runningCar *nextCar;
+    station *start_station;
+    running_car *nextCar;
 };
 
-struct RunningCarList {
-    runningCar *currentBestCar;
-    runningCar *lastCar;
-    int size;
-} runningCarList;
+struct running_car_list {
+    running_car *current_best_car;
+    running_car *last_car;
+    u_int16_t size;
+} running_cars_list;
 
-struct ReverseRunningCar {
+struct reverse_running_car {
     int autonomy;
-    int neededChanges;
-    reverseRunningCar *nextCar;
-    reverseRunningCar *prevCar;
-    station *startStation;
+    u_int8_t needed_changes;
+    reverse_running_car *next_car;
+    reverse_running_car *prev_car;
+    station *start_station;
 };
 
-struct ReverseRunningCarList {
-    reverseRunningCar *first;
-    reverseRunningCar *last;
-    reverseRunningCar *currentBestCar;
-    reverseRunningCar *nextBestCar;
-    int size;
-} reverseRunningCarList;
+struct reverse_running_car_list {
+    reverse_running_car *first;
+    reverse_running_car *last;
+    reverse_running_car *current_best_car;
+    reverse_running_car *next_best_car;
+    u_int16_t size;
+} rev_running_cars_list;
 
-void fullFreeStation(station *station){
-    free(station->carsMaxHeap->cars);
-    free(station->carsMaxHeap);
+void full_free_station(station *station){
+    free(station->cars_max_heap->cars);
+    free(station->cars_max_heap);
     free(station);
 }
 
-//returns the next node;
-station *deleteSuccessorDuplicate(station *station);
+//read input while
+void read_input();
 
-//add station to the highwayTree creating a maxHeap using the maxHeap utilities
-station *addStation(int position, unsigned short int carCount, unsigned short int capacity, int *initialCars);
+//ignores position chars from stdin
+void move_cursor(int position);
+
+//reads an int from stdin
+int read_int();
+
+//reads an array of ints from stdin
+int *read_int_arr(int size, int capacity);
+
+//returns the next node;
+station *delete_successor_duplicate(station *station);
+
+//add station to the highway_tree creating a max_heap using the max_heap utilities
+station *add_station(int position, u_int16_t car_count, u_int16_t capacity, int *initial_cars);
 
 //returns a station if the station exists, NULL otherwise.
-station *getStation(int position);
+station *get_station(int position);
 
 //demolishes a station if present using the recursive utils
-station* eraseNode(station *station);
+station* erase_node(station *station);
 
 //removes a node recursively
-station* removeNode(station* root, int pos);
+station* remove_node(station* root, int pos);
 
-//adds a car using the utility maxHeap and tree functions
-void addCar(int position, int autonomy);
+//adds a car using the utility max_heap and tree functions
+void add_car(int position, int autonomy);
 
-//removes a car using the utility maxHeap and tree functions
-void removeCar(int position, int autonomy);
+//removes a car using the utility max_heap and tree functions
+void remove_car(int position, int autonomy);
 
-//builds a max heap of carsMaxHeap
-maxHeap *sortCars(unsigned short int carCount, int capacity,int* initialCars);
+//builds a max heap of cars max_heap
+max_heap *sort_cars(u_int16_t car_count, u_int16_t capacity, int *initial_cars);
 
 //adds an int variable  to a max heap;
-void addToMaxHeap(maxHeap *maxHeap, int autonomy);
+void add_to_max_heap(max_heap *max_heap, int autonomy);
 
-//removes a node to a max heap and fixes the position using heapify and fixMaxHeapInsert
-bool removeFromMaxHeap(maxHeap *heap, int autonomy);
+//removes a node to a max heap and fixes the position using heapify and fix max_heap insert
+bool remove_from_max_heap(max_heap *heap, int autonomy);
 
 //corrects the max heap positioning of a certain node when creating a max heap or removing a node
-void heapify(maxHeap* heap, int idx);
+void heapify(max_heap* heap, int idx);
 
 //corrects the max heap positioning of a certain node after node insertion
-void fixMaxHeapInsert(maxHeap *heap, int idx);
+void fix_max_heap_insert(max_heap *heap, int idx);
 
 //addCars to the runningCarsList;
-void addCarToRunningCarList(int autonomy, station* startStation);
+void add_car_to_running_cars_list(int autonomy, station* start_station);
 
 
 
 //tree utils -----------------------------------------------------------------------------------------------------
 
-station *addStation(int position, unsigned short int carCount, unsigned short int capacity, int *initialCars) {
-    station *newStation = (station *) malloc(sizeof(station));
-    newStation->position = position;
-    maxHeap* newMaxHeap = sortCars(carCount, capacity, initialCars);
-    newStation->carsMaxHeap = newMaxHeap;
-    newStation->carsMaxHeap->cars = initialCars;
-    newStation->carsMaxHeap->size = carCount;
-    newStation->bestPreviousStation = NULL;
-    if (highwayTree.root == NULL) {
-        highwayTree.root = newStation;
-        newStation->leftChild = NULL;
-        newStation->rightChild = NULL;
-        newStation->nextStation = NULL;
-        newStation->prevStation = NULL;
-        return newStation;
+station *add_station(int position, u_int16_t car_count, u_int16_t capacity, int *initial_cars) {
+    station *new_station = (station *) malloc(sizeof(station));
+    new_station->position = position;
+    max_heap* new_max_heap = sort_cars(car_count, capacity, initial_cars);
+    new_station->cars_max_heap = new_max_heap;
+    new_station->cars_max_heap->cars = initial_cars;
+    new_station->cars_max_heap->size = car_count;
+    new_station->best_previous_station = NULL;
+    if (highway_tree.root == NULL) {
+        highway_tree.root = new_station;
+        new_station->left_child = NULL;
+        new_station->right_child = NULL;
+        new_station->next_station = NULL;
+        new_station->prev_station = NULL;
+        return new_station;
     } else {
-        station *currentStation = highwayTree.root;
+        station *currentStation = highway_tree.root;
         while (true) {
-            if (currentStation->position > newStation->position) {
-                if (currentStation->leftChild == NULL) {
+            if (currentStation->position > new_station->position) {
+                if (currentStation->left_child == NULL) {
                     //adding to the tree
-                    currentStation->leftChild = newStation;
-                    newStation->leftChild = NULL;
-                    newStation->rightChild = NULL;
+                    currentStation->left_child = new_station;
+                    new_station->left_child = NULL;
+                    new_station->right_child = NULL;
 
                     //adding to the list
-                    newStation->nextStation = currentStation;
-                    newStation->prevStation = currentStation->prevStation;
-                    currentStation->prevStation = newStation;
-                    if (newStation->prevStation != NULL){
-                        newStation->prevStation->nextStation = newStation;
+                    new_station->next_station = currentStation;
+                    new_station->prev_station = currentStation->prev_station;
+                    currentStation->prev_station = new_station;
+                    if (new_station->prev_station != NULL){
+                        new_station->prev_station->next_station = new_station;
                     }
-                    return newStation;
+                    return new_station;
                 } else {
-                    currentStation = currentStation->leftChild;
+                    currentStation = currentStation->left_child;
                 }
-            } else if (currentStation->position < newStation->position) {
-                if (currentStation->rightChild == NULL) {
+            } else if (currentStation->position < new_station->position) {
+                if (currentStation->right_child == NULL) {
                     //adding to the tree
-                    currentStation->rightChild = newStation;
+                    currentStation->right_child = new_station;
 
                     //adding to the list
-                    newStation->prevStation = currentStation;
-                    newStation->nextStation = currentStation->nextStation;
-                    newStation->leftChild = NULL;
-                    newStation->rightChild = NULL;
-                    currentStation->nextStation = newStation;
-                    if (newStation->nextStation != NULL)
-                        newStation->nextStation->prevStation = newStation;
-                    return newStation;
+                    new_station->prev_station = currentStation;
+                    new_station->next_station = currentStation->next_station;
+                    new_station->left_child = NULL;
+                    new_station->right_child = NULL;
+                    currentStation->next_station = new_station;
+                    if (new_station->next_station != NULL)
+                        new_station->next_station->prev_station = new_station;
+                    return new_station;
                 } else {
-                    currentStation = currentStation->rightChild;
+                    currentStation = currentStation->right_child;
                 }
             } else {
                 return NULL;
@@ -165,20 +180,20 @@ station *addStation(int position, unsigned short int carCount, unsigned short in
     }
 }
 
-station *getStation(int position) {
-    struct Station *currentStation = highwayTree.root;
-    if (currentStation == NULL) return NULL;
+station *get_station(int position) {
+    struct station *curr_st = highway_tree.root;
+    if (curr_st == NULL) return NULL;
     while (true) {
-        if (currentStation->position == position) return currentStation;
-        else if (currentStation->position > position) {
-            if (currentStation->leftChild != NULL) {
-                currentStation = currentStation->leftChild;
+        if (curr_st->position == position) return curr_st;
+        else if (curr_st->position > position) {
+            if (curr_st->left_child != NULL) {
+                curr_st = curr_st->left_child;
             } else {
                 return NULL;
             }
-        } else if (currentStation->position < position) {
-            if (currentStation->rightChild != NULL) {
-                currentStation = currentStation->rightChild;
+        } else if (curr_st->position < position) {
+            if (curr_st->right_child != NULL) {
+                curr_st = curr_st->right_child;
             } else {
                 return NULL;
             }
@@ -186,10 +201,10 @@ station *getStation(int position) {
     }
 }
 
-station* removeNode(station* root, int pos){
+station* remove_node(station* root, int pos){
     station* parent = NULL;
     station* current = root;
-    bool isLeftChild = false;
+    bool is_left_child = false;
 
     if(root == NULL) return root;
 
@@ -197,141 +212,141 @@ station* removeNode(station* root, int pos){
         if(current->position == pos) break;
         parent = current;
         if(current->position > pos){
-            current = current->leftChild;
-            isLeftChild = true;
+            current = current->left_child;
+            is_left_child = true;
         } else {
-            current = current->rightChild;
-            isLeftChild = false;
+            current = current->right_child;
+            is_left_child = false;
         }
     }
 
     if(current == NULL){ //no node found
-        printf("non demolita\n");
+        puts("non demolita");
         return root;
     }
 
     if(parent == NULL){ //root removal
-        highwayTree.root = eraseNode(current);
-        printf("demolita\n");
-        return highwayTree.root;
+        highway_tree.root = erase_node(current);
+        puts("demolita");
+        return highway_tree.root;
     }
 
-    if(isLeftChild) { //left child removal
-        parent->leftChild = eraseNode(current);
+    if(is_left_child) { //left child removal
+        parent->left_child = erase_node(current);
     } else { //right child removal
-        parent->rightChild = eraseNode(current);
+        parent->right_child = erase_node(current);
     }
 
-    printf("demolita\n");
+    puts("demolita");
     return root;
 }
 
-station* eraseNode(station *station) {
+station* erase_node(station *station) {
     if(station == NULL) return station;
 
     //fixing list
-    if(station->prevStation!=NULL) station->prevStation->nextStation = station->nextStation;
-    if(station->nextStation!=NULL) station->nextStation->prevStation= station->prevStation;
+    if(station->prev_station != NULL) station->prev_station->next_station = station->next_station;
+    if(station->next_station != NULL) station->next_station->prev_station= station->prev_station;
 
-    if(station->leftChild == NULL && station->rightChild == NULL){ //no leaves
+    if(station->left_child == NULL && station->right_child == NULL){ //no leaves
         free(station);
         return NULL;
     }
-    if(station->leftChild != NULL && station->rightChild != NULL){ //both leaves
-        struct Station *successor;
-        successor = deleteSuccessorDuplicate(station);
+    if(station->left_child != NULL && station->right_child != NULL){ //both leaves
+        struct station *successor;
+        successor = delete_successor_duplicate(station);
         //copying data
         station->position = successor->position;
-        free(station->carsMaxHeap->cars);
-        free(station->carsMaxHeap);
-        station->carsMaxHeap = successor->carsMaxHeap;
-        station->prevStation = successor->prevStation;
-        station->nextStation = successor->nextStation;
-        if(station->nextStation!=NULL) station->nextStation->prevStation = station;
-        if(station->prevStation!=NULL) station->prevStation->nextStation = station;
+        free(station->cars_max_heap->cars);
+        free(station->cars_max_heap);
+        station->cars_max_heap = successor->cars_max_heap;
+        station->prev_station = successor->prev_station;
+        station->next_station = successor->next_station;
+        if(station->next_station != NULL) station->next_station->prev_station = station;
+        if(station->prev_station != NULL) station->prev_station->next_station = station;
         free(successor);
-    } else if (station->leftChild != NULL){ //only left leave
-        station = station->leftChild;
+    } else if (station->left_child != NULL){ //only left leave
+        station = station->left_child;
         //todo free
     } else { //only right leave
-        station = station->rightChild;
+        station = station->right_child;
         //todo free
     }
 
     return station;
 }
 
-station *deleteSuccessorDuplicate(station *station) {
-    struct Station *parent = station;
-    station = station->rightChild;
-    bool right = station->leftChild == NULL;
-    while(station->leftChild != NULL){
+station *delete_successor_duplicate(station *station) {
+    struct station *parent = station;
+    station = station->right_child;
+    bool right = station->left_child == NULL;
+    while(station->left_child != NULL){
         parent = station;
-        station = station->leftChild;
+        station = station->left_child;
     }
 
     if(right) {
-        parent->rightChild = station->rightChild;
+        parent->right_child = station->right_child;
     } else {
-        parent->leftChild = station->rightChild;
+        parent->left_child = station->right_child;
     }
 
-    station->rightChild = NULL;
+    station->right_child = NULL;
     return station;
 }
 
 //max heap utils -----------------------------------------------------------------------------------------------------
 
-void addCar(int position, int autonomy) {
-    station* st = getStation(position);
-    if(getStation(position) == NULL){
-        printf("non aggiunta\n");
+void add_car(int position, int autonomy) {
+    station* st = get_station(position);
+    if(get_station(position) == NULL){
+        puts("non aggiunta");
         return;
     }
-    addToMaxHeap(st->carsMaxHeap, autonomy);
-    printf("aggiunta\n");
+    add_to_max_heap(st->cars_max_heap, autonomy);
+    puts("aggiunta");
 }
 
-void removeCar(int position, int autonomy) {
-    station* st = getStation(position);
-    if(getStation(position) == NULL){
-        printf("non rottamata\n");
+void remove_car(int position, int autonomy) {
+    station* st = get_station(position);
+    if(get_station(position) == NULL){
+        puts("non rottamata");
         return;
     }
-    if(removeFromMaxHeap(st->carsMaxHeap, autonomy)){
-        printf("rottamata\n");
+    if(remove_from_max_heap(st->cars_max_heap, autonomy)){
+        puts("rottamata");
     } else {
-        printf("non rottamata\n");
+        puts("non rottamata");
     }
 }
 
-maxHeap *sortCars(unsigned short int carCount, int capacity,int* initialCars){
-    maxHeap *newHeap = (maxHeap*) malloc(sizeof(maxHeap));
-    newHeap->size = carCount;
-    newHeap->capacity=capacity;
-    newHeap->cars = initialCars;
-    for(int i = carCount/2+1; i > 0; i--){
-        heapify(newHeap, i);
+max_heap *sort_cars(u_int16_t car_count, u_int16_t capacity, int* initial_cars){
+    max_heap *new_heap = (max_heap*) malloc(sizeof(max_heap));
+    new_heap->size = car_count;
+    new_heap->capacity=capacity;
+    new_heap->cars = initial_cars;
+    for(int i = car_count / 2 + 1; i > 0; i--){
+        heapify(new_heap, i);
     }
-    return newHeap;
+    return new_heap;
 }
 
-void addToMaxHeap(maxHeap *maxHeap, int autonomy) {
-    if(maxHeap->size == 0 ){
+void add_to_max_heap(max_heap *max_heap, int autonomy) {
+    if(max_heap->size == 0 ){
         int* newHeap = (int*) malloc(sizeof(int) * 1);
-        maxHeap->cars = newHeap;
-        maxHeap->capacity = 1;
-    } else if(maxHeap->size == maxHeap->capacity){
-        int* reallocatedCars = (int*) realloc(maxHeap->cars,sizeof(int) * maxHeap->capacity*2);
-        maxHeap->cars = reallocatedCars;
-        maxHeap->capacity = maxHeap->capacity*2;
+        max_heap->cars = newHeap;
+        max_heap->capacity = 1;
+    } else if(max_heap->size == max_heap->capacity){
+        int* reallocated_cars = (int*) realloc(max_heap->cars, sizeof(int) * max_heap->capacity * 2);
+        max_heap->cars = reallocated_cars;
+        max_heap->capacity = max_heap->capacity*2;
     }
-    maxHeap->size = maxHeap->size+1;
-    maxHeap->cars[maxHeap->size-1] = autonomy;
-    fixMaxHeapInsert(maxHeap,maxHeap->size);
+    max_heap->size = max_heap->size+1;
+    max_heap->cars[max_heap->size-1] = autonomy;
+    fix_max_heap_insert(max_heap,max_heap->size);
 }
 
-bool removeFromMaxHeap(maxHeap *heap, int autonomy) {
+bool remove_from_max_heap(max_heap *heap, int autonomy) {
     for(int i = 0; i < heap->size; i++){
         if(heap->cars[i]==autonomy){
             heap->cars[i] = 0; //avoiding reassignment and non-erasure of the value
@@ -339,14 +354,14 @@ bool removeFromMaxHeap(maxHeap *heap, int autonomy) {
             heap->size--;
             //if it is minor then one of his children
             heapify(heap,i+1); //one based
-            fixMaxHeapInsert(heap,i+1);
+            fix_max_heap_insert(heap,i+1);
             return true;
         }
     }
     return false;
 }
 
-void heapify(maxHeap* heap, int idx){
+void heapify(max_heap* heap, int idx){
     int left = idx*2;
     int right = idx*2+1;
     int max = idx;
@@ -366,7 +381,7 @@ void heapify(maxHeap* heap, int idx){
 }
 
 //one based
-void fixMaxHeapInsert(maxHeap *heap, int idx) {
+void fix_max_heap_insert(max_heap *heap, int idx) {
     if(idx==1) return;
     while(heap->cars[idx/2-1]< heap->cars[idx-1]){
         int temp = heap->cars[idx/2-1];
@@ -379,399 +394,338 @@ void fixMaxHeapInsert(maxHeap *heap, int idx) {
 
 //running cars list utils ---------------------------------------------------------------------------------
 
-void addCarToRunningCarList(int autonomy, station* startStation){
-    runningCar *newCar = (runningCar*) malloc(sizeof(runningCar));
+void add_car_to_running_cars_list(int autonomy, station* start_station){
+    running_car *newCar = (running_car*) malloc(sizeof(running_car));
     newCar->autonomy = autonomy;
-    newCar->startStation = startStation;
+    newCar->start_station = start_station;
     newCar->nextCar = NULL;
-    if(runningCarList.currentBestCar==NULL){
-        runningCarList.currentBestCar = newCar;
-        runningCarList.lastCar = newCar;
-        runningCarList.size = 1;
+    if(running_cars_list.current_best_car == NULL){
+        running_cars_list.current_best_car = newCar;
+        running_cars_list.last_car = newCar;
+        running_cars_list.size = 1;
         return;
     } else {
-        runningCarList.lastCar->nextCar = newCar;
-        runningCarList.lastCar = newCar;
-        runningCarList.size++;
+        running_cars_list.last_car->nextCar = newCar;
+        running_cars_list.last_car = newCar;
+        running_cars_list.size++;
         return;
     }
 }
 
-void addCarToReverseRunningCarList(int autonomy, station* startStation){
-    reverseRunningCar *newCar = (reverseRunningCar*) malloc(sizeof(reverseRunningCar));
+void add_car_to_reverse_running_cars_list(int autonomy, station* start_st){
+    reverse_running_car *newCar = (reverse_running_car*) malloc(sizeof(reverse_running_car));
     newCar->autonomy = autonomy;
-    newCar->startStation = startStation;
-    newCar->nextCar = NULL;
-    if(reverseRunningCarList.first==NULL){
-        newCar->prevCar = NULL;
-        newCar->neededChanges = 0;
-        reverseRunningCarList.first = newCar;
-        reverseRunningCarList.last = newCar;
-        reverseRunningCarList.size = 1;
-        reverseRunningCarList.currentBestCar = newCar;
-        reverseRunningCarList.nextBestCar = NULL;
+    newCar->start_station = start_st;
+    newCar->next_car = NULL;
+    if(rev_running_cars_list.first == NULL){
+        newCar->prev_car = NULL;
+        newCar->needed_changes = 0;
+        rev_running_cars_list.first = newCar;
+        rev_running_cars_list.last = newCar;
+        rev_running_cars_list.size = 1;
+        rev_running_cars_list.current_best_car = newCar;
+        rev_running_cars_list.next_best_car = NULL;
         return;
     } else {
-        newCar->neededChanges = reverseRunningCarList.first->neededChanges+1;
-        reverseRunningCarList.last->nextCar = newCar;
-        newCar->prevCar = reverseRunningCarList.last;
-        reverseRunningCarList.last = newCar;
-        reverseRunningCarList.size++;
-        reverseRunningCarList.nextBestCar = newCar;
+        newCar->needed_changes = rev_running_cars_list.first->needed_changes + 1;
+        rev_running_cars_list.last->next_car = newCar;
+        newCar->prev_car = rev_running_cars_list.last;
+        rev_running_cars_list.last = newCar;
+        rev_running_cars_list.size++;
+        rev_running_cars_list.next_best_car = newCar;
         return;
     }
 }
 
-void deleteDeadCars(station* currentStation){
-    int initialSize = runningCarList.size;
+void delete_dead_cars(station* curr_st){
+    int initialSize = running_cars_list.size;
     for(int i = 0; i < initialSize; i++){
-        if(runningCarList.currentBestCar->startStation->position + runningCarList.currentBestCar->autonomy < currentStation->position){
-            runningCar *toFree = runningCarList.currentBestCar;
-            runningCarList.currentBestCar = runningCarList.currentBestCar->nextCar;
+        if(running_cars_list.current_best_car->start_station->position + running_cars_list.current_best_car->autonomy < curr_st->position){
+            running_car *toFree = running_cars_list.current_best_car;
+            running_cars_list.current_best_car = running_cars_list.current_best_car->nextCar;
             free(toFree);
-            runningCarList.size--;
+            running_cars_list.size--;
         } else {
             break;
         }
     }
 }
 
-void reverseHeadDeleteDeadCars(station* currentStation){
-    int initialSize = reverseRunningCarList.size;
-    int minChanges = reverseRunningCarList.first->neededChanges;
+void delete_dead_cars_rev(station* curr_st){
+    int initialSize = rev_running_cars_list.size;
+    int minChanges = rev_running_cars_list.first->needed_changes;
     for(int i = 0; i < initialSize; i++){
-        if(reverseRunningCarList.first->startStation->position - reverseRunningCarList.first->autonomy > currentStation->position){
-            reverseRunningCar *toFree = reverseRunningCarList.first;
-            if(reverseRunningCarList.first == reverseRunningCarList.last) {
-                reverseRunningCarList.last = NULL;
-                reverseRunningCarList.first = NULL;
-                reverseRunningCarList.currentBestCar = NULL;
-                reverseRunningCarList.nextBestCar = NULL;
+        if(rev_running_cars_list.first->start_station->position - rev_running_cars_list.first->autonomy > curr_st->position){
+            reverse_running_car *toFree = rev_running_cars_list.first;
+            if(rev_running_cars_list.first == rev_running_cars_list.last) {
+                rev_running_cars_list.last = NULL;
+                rev_running_cars_list.first = NULL;
+                rev_running_cars_list.current_best_car = NULL;
+                rev_running_cars_list.next_best_car = NULL;
             } else {
-                reverseRunningCarList.first = reverseRunningCarList.first->nextCar;
-                reverseRunningCarList.first->prevCar = NULL;
-                if(reverseRunningCarList.first->neededChanges > minChanges){
-                    reverseRunningCarList.currentBestCar = reverseRunningCarList.nextBestCar;
-                    minChanges = reverseRunningCarList.currentBestCar->neededChanges;
-                    reverseRunningCarList.nextBestCar = NULL;
+                rev_running_cars_list.first = rev_running_cars_list.first->next_car;
+                rev_running_cars_list.first->prev_car = NULL;
+                if(rev_running_cars_list.first->needed_changes > minChanges){
+                    rev_running_cars_list.current_best_car = rev_running_cars_list.next_best_car;
+                    minChanges = rev_running_cars_list.current_best_car->needed_changes;
+                    rev_running_cars_list.next_best_car = NULL;
                 }
             }
             free(toFree);
-            reverseRunningCarList.size--;
+            rev_running_cars_list.size--;
         } else {
             break;
         }
     }
 }
 
-void clearRunningCarList(){
-    while(runningCarList.currentBestCar!=NULL){
-        runningCar *toFree = runningCarList.currentBestCar;
-        runningCarList.currentBestCar = runningCarList.currentBestCar->nextCar;
+void clear_running_cars(){
+    while(running_cars_list.current_best_car != NULL){
+        running_car *toFree = running_cars_list.current_best_car;
+        running_cars_list.current_best_car = running_cars_list.current_best_car->nextCar;
         free(toFree);
     }
-    runningCarList.size = 0;
-    runningCarList.currentBestCar = NULL;
-    runningCarList.lastCar = NULL;
+    running_cars_list.size = 0;
+    running_cars_list.current_best_car = NULL;
+    running_cars_list.last_car = NULL;
 }
 
-void clearReverseRunningCarList(){
-    while(reverseRunningCarList.first!=NULL){
-        reverseRunningCar *toFree = reverseRunningCarList.first;
-        reverseRunningCarList.first = reverseRunningCarList.first->nextCar;
+void clear_running_cars_rev(){
+    while(rev_running_cars_list.first != NULL){
+        reverse_running_car *toFree = rev_running_cars_list.first;
+        rev_running_cars_list.first = rev_running_cars_list.first->next_car;
         free(toFree);
     }
-    reverseRunningCarList.size = 0;
-    reverseRunningCarList.first = NULL;
-    reverseRunningCarList.last= NULL;
-    reverseRunningCarList.currentBestCar = NULL;
-    reverseRunningCarList.nextBestCar = NULL;
+    rev_running_cars_list.size = 0;
+    rev_running_cars_list.first = NULL;
+    rev_running_cars_list.last= NULL;
+    rev_running_cars_list.current_best_car = NULL;
+    rev_running_cars_list.next_best_car = NULL;
 }
 
-reverseRunningCar *calculateBestReverseRunningCar(station* currentStation){
-    reverseRunningCar *bestCar = reverseRunningCarList.currentBestCar;
-    while(bestCar->startStation->position - bestCar->autonomy > currentStation->position){
-        bestCar->prevCar->nextCar = bestCar->nextCar;
-        if(bestCar->nextCar != NULL) bestCar->nextCar->prevCar = bestCar->prevCar;
-        reverseRunningCar *toFree = bestCar;
-        bestCar = bestCar->prevCar;
-        reverseRunningCarList.currentBestCar = bestCar;
-        if(reverseRunningCarList.last == toFree){
-            reverseRunningCarList.last = bestCar;
+reverse_running_car *calculate_best_car_rev(station* currentStation){
+    reverse_running_car *bestCar = rev_running_cars_list.current_best_car;
+    while(bestCar->start_station->position - bestCar->autonomy > currentStation->position){
+        bestCar->prev_car->next_car = bestCar->next_car;
+        if(bestCar->next_car != NULL) bestCar->next_car->prev_car = bestCar->prev_car;
+        reverse_running_car *toFree = bestCar;
+        bestCar = bestCar->prev_car;
+        rev_running_cars_list.current_best_car = bestCar;
+        if(rev_running_cars_list.last == toFree){
+            rev_running_cars_list.last = bestCar;
         }
         free(toFree);
-        reverseRunningCarList.size --;
+        rev_running_cars_list.size --;
     }
     return bestCar;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-
-void recursivePrintSolution(station *currentNode, int initialPosition, int endPosition) {
+void print_solution_recur(station *currentNode, int initialPosition, int endPosition) {
     if(currentNode->position == initialPosition) {
         printf("%d ",initialPosition);
         return;
     }
-    recursivePrintSolution(currentNode->bestPreviousStation,initialPosition, endPosition);
+    print_solution_recur(currentNode->best_previous_station, initialPosition, endPosition);
     if(currentNode->position==endPosition) printf("%d",currentNode->position);
     else printf("%d ",currentNode->position);
 }
 
-void printSolution(station *endNode, int initialPosition, int endPosition) {
-    recursivePrintSolution(endNode, initialPosition, endPosition);
-    printf("\n");
+void print_solution(station *endNode, int initialPosition, int endPosition) {
+    print_solution_recur(endNode, initialPosition, endPosition);
+    puts("");
 }
 
-void findPath(int initialPosition, int endPosition) {
-    station* firstStation = getStation(initialPosition);
-    station* lastStation = getStation(endPosition); //not necessary
+void find_path(int initialPosition, int endPosition) {
+    station* firstStation = get_station(initialPosition);
+    station* lastStation = get_station(endPosition); //not necessary
     if(firstStation==NULL || lastStation==NULL){
-        printf("nessun percorso\n");
+        puts("nessun percorso");
     }
     station *currentStation;
-    addCarToRunningCarList(firstStation->carsMaxHeap->cars[0],firstStation);
-    currentStation = firstStation->nextStation;
+    add_car_to_running_cars_list(firstStation->cars_max_heap->cars[0], firstStation);
+    currentStation = firstStation->next_station;
     while(true){
         //impossible path (no station | last station)
         if(currentStation == NULL || currentStation->position > endPosition) {
-            printf("nessun percorso\n");
+            puts("nessun percorso");
             break;
         }
 
         //erasing dead cars
-        deleteDeadCars(currentStation);
+        delete_dead_cars(currentStation);
 
         //checking if impossible path
-        if(runningCarList.size==0){
-            printf("nessun percorso\n");
+        if(running_cars_list.size == 0){
+            puts("nessun percorso");
             break;
         }
 
-        //setting bestPreviousStation
-        currentStation->bestPreviousStation = runningCarList.currentBestCar->startStation;
+        //setting best_previous_station
+        currentStation->best_previous_station = running_cars_list.current_best_car->start_station;
 
         //end case
         if(currentStation->position == endPosition){
-            printSolution(currentStation,initialPosition,endPosition);
+            print_solution(currentStation, initialPosition, endPosition);
             break;
         }
 
         //adding new car if it may be better than the best one
-        if(runningCarList.lastCar->autonomy + runningCarList.lastCar->startStation->position <
-           currentStation->carsMaxHeap->cars[0] + currentStation->position){
-            addCarToRunningCarList(currentStation->carsMaxHeap->cars[0],currentStation);
+        if(running_cars_list.last_car->autonomy + running_cars_list.last_car->start_station->position <
+           currentStation->cars_max_heap->cars[0] + currentStation->position){
+            add_car_to_running_cars_list(currentStation->cars_max_heap->cars[0], currentStation);
         }
 
-        currentStation = currentStation->nextStation;
+        currentStation = currentStation->next_station;
     }
-    clearRunningCarList();
+    clear_running_cars();
 }
 
-void reverseFindPath(int initialPosition, int endPosition) {
-    station* firstStation = getStation(initialPosition);
-    station* lastStation = getStation(endPosition); //not necessary
+void find_path_rev(int initialPosition, int endPosition) {
+    station* firstStation = get_station(initialPosition);
+    station* lastStation = get_station(endPosition); //not necessary
     if(firstStation==NULL || lastStation==NULL){
-        printf("nessun percorso\n");
+        puts("nessun percorso\n");
     }
     station *currentStation;
-    addCarToReverseRunningCarList(firstStation->carsMaxHeap->cars[0],firstStation);
-    currentStation = firstStation->prevStation;
+    add_car_to_reverse_running_cars_list(firstStation->cars_max_heap->cars[0], firstStation);
+    currentStation = firstStation->prev_station;
     while(true){
         //no end station
         if(currentStation == NULL || currentStation->position < endPosition){
-            printf("nessun percorso\n");
+            puts("nessun percorso");
             break;
         }
 
         //erasing dead cars
-        reverseHeadDeleteDeadCars(currentStation);
+        delete_dead_cars_rev(currentStation);
 
         //impossible path
-        if(reverseRunningCarList.size == 0){
-            printf("nessun percorso\n");
+        if(rev_running_cars_list.size == 0){
+            puts("nessun percorso");
             break;
         }
 
         //calculating best car
-        reverseRunningCar *bestCar = calculateBestReverseRunningCar(currentStation);
+        reverse_running_car *bestCar = calculate_best_car_rev(currentStation);
 
         //updating best prev station
-        currentStation->bestPreviousStation = bestCar->startStation;
+        currentStation->best_previous_station = bestCar->start_station;
 
         //end
         if(currentStation->position == endPosition){
-            printSolution(currentStation,initialPosition,endPosition);
+            print_solution(currentStation, initialPosition, endPosition);
             break;
         }
 
         //adding new car
-        addCarToReverseRunningCarList(currentStation->carsMaxHeap->cars[0],currentStation);
+        add_car_to_reverse_running_cars_list(currentStation->cars_max_heap->cars[0], currentStation);
 
-        currentStation = currentStation->prevStation;
+        currentStation = currentStation->prev_station;
     }
-    clearReverseRunningCarList();
-}
-
-
-//----------------------------------------------------------------------------------------------------------------------
-
-int main();
-
-void readInput();
-
-void moveCursor(int position);
-
-int readInt();
-
-int *readIntArray(int size, int capacity);
-
-bool checkList();
-
-
-char* concat(const char* a, const char* b, const char* c){
-    return strcat(strcat(strcpy(malloc(strlen(a) + strlen(b) + strlen(c) +  1),a), b), c);
+    clear_running_cars_rev();
 }
 
 int main() {
-    /*
-    int firstTest = 1;
-    int lastTest = 111;
-    for(int i = firstTest; i <= lastTest; i++){
-        char path[40] = "/home/phil/CLionProjects/api/test/open_\0";
-        char txt[5] = ".txt\0";
-        char outTxt[17] = ".output.mine.txt\0";
-        int testNumber = i;
-        int testNumberSize = floor(log10(testNumber)) + 1;
-        char number[4];
-        number[testNumberSize] = '\0';
-        for(int j = testNumberSize-1; j>=0; j--){
-            number[j] = (char) (testNumber%10+'0');
-            testNumber = testNumber/10;
-        }
-        char* in = concat(path,number,txt);
-        char* out = concat(path,number,outTxt);
-
-        fclose(stdin);
-        stdin = fopen(in,"r");
-
-        fclose(stdout);
-        stdout = fopen(out,"w");
-
-        runningCarList.currentBestCar = NULL;
-        runningCarList.lastCar = NULL;
-        runningCarList.size = 0;
-        reverseRunningCarList.first = NULL;
-        reverseRunningCarList.last = NULL;
-        reverseRunningCarList.size = 0;
-        reverseRunningCarList.currentBestCar = NULL;
-        reverseRunningCarList.nextBestCar = NULL;
-        highwayTree.root = NULL;
-
-        readInput();
-    }
-     */
-    runningCarList.currentBestCar = NULL;
-    runningCarList.lastCar = NULL;
-    runningCarList.size = 0;
-    reverseRunningCarList.first = NULL;
-    reverseRunningCarList.last = NULL;
-    reverseRunningCarList.size = 0;
-    reverseRunningCarList.currentBestCar = NULL;
-    reverseRunningCarList.nextBestCar = NULL;
-    highwayTree.root = NULL;
-
-    readInput();
+    running_cars_list.current_best_car = NULL;
+    running_cars_list.last_car = NULL;
+    running_cars_list.size = 0;
+    rev_running_cars_list.first = NULL;
+    rev_running_cars_list.last = NULL;
+    rev_running_cars_list.size = 0;
+    rev_running_cars_list.current_best_car = NULL;
+    rev_running_cars_list.next_best_car = NULL;
+    highway_tree.root = NULL;
+    read_input();
 }
 
-void readInput(){
+void read_input(){
     int counter = 0;
     while (true) {
         int new_char;
-        new_char = getchar();
+        new_char = getchar_unlocked();
         counter++;
         if (new_char == EOF) {
             break;
         }
         switch (new_char) {
             case 'a' : {
-                moveCursor(8);
-                if (((char) getchar()) == 's') {
+                move_cursor(8);
+                if (((char) getchar_unlocked()) == 's') {
                     //printInfo();
-                    moveCursor(8);
-                    int position = readInt();
-                    unsigned short int carCount = readInt();
+                    move_cursor(8);
+                    int position = read_int();
+                    unsigned short int carCount = read_int();
                     unsigned short int capacity = (unsigned short int) pow(2,ceil(log2(carCount))) ;
                     capacity = capacity != 0 ? capacity : 1;
-                    int *cars = readIntArray(carCount,capacity);
-                    if(addStation(position, carCount, capacity, cars)!=NULL)
-                        printf("aggiunta\n");
-                    else printf("non aggiunta\n");
+                    int *cars = read_int_arr(carCount, capacity);
+                    if(add_station(position, carCount, capacity, cars) != NULL)
+                        puts("aggiunta");
+                    else puts("non aggiunta");
                 } else {
                     //printInfo();
-                    moveCursor(4);
-                    int position = readInt();
-                    int autonomy = readInt();
-                    addCar(position, autonomy);
+                    move_cursor(4);
+                    int position = read_int();
+                    int autonomy = read_int();
+                    add_car(position, autonomy);
                 }
                 break;
             }
             case 'd' : {
                 //printInfo();
-                moveCursor(18);
-                int position = readInt();
-                removeNode(highwayTree.root,position);
+                move_cursor(18);
+                int position = read_int();
+                remove_node(highway_tree.root, position);
                 //printInfo();
                 break;
             }
             case 'r' : {
-                moveCursor(12);
-                int position = readInt();
-                int autonomy = readInt();
-                removeCar(position, autonomy);
+                move_cursor(12);
+                int position = read_int();
+                int autonomy = read_int();
+                remove_car(position, autonomy);
                 break;
             }
             case 'p' : {
-                moveCursor(18);
-                int initialPosition = readInt();
-                int endPosition = readInt();
-                if (initialPosition < endPosition) findPath(initialPosition, endPosition);
-                else reverseFindPath(initialPosition, endPosition);
+                move_cursor(18);
+                int initialPosition = read_int();
+                int endPosition = read_int();
+                if (initialPosition < endPosition) find_path(initialPosition, endPosition);
+                else find_path_rev(initialPosition, endPosition);
                 break;
             }
             default: {
-                while (getchar() != '\n');
+                while (getchar_unlocked() != '\n');
             }
         }
     }
-    station* currentStation = highwayTree.root;
-    while(currentStation->leftChild!=NULL){
-        currentStation = currentStation->leftChild;
+    station* currentStation = highway_tree.root;
+    while(currentStation->left_child != NULL){
+        currentStation = currentStation->left_child;
     }
-    while(currentStation->nextStation!=NULL){
+    while(currentStation->next_station != NULL){
         station* toFree = currentStation;
-        currentStation = currentStation->nextStation;
-        fullFreeStation(toFree);
+        currentStation = currentStation->next_station;
+        full_free_station(toFree);
     }
 }
 
-void moveCursor(int positions) {
-    for(int i = 0; i < positions; i++) getchar();
+void move_cursor(int positions) {
+    for(int i = 0; i < positions; i++) getchar_unlocked();
 }
 
-int readInt() {
+int read_int() {
     int value = 0;
     int digit;
-    while ((digit = getchar()) != ' ' && digit != '\n') {
+    while ((digit = getchar_unlocked()) != ' ' && digit != '\n') {
         value = value * 10 + digit - '0';
     }
     return value;
 }
 
-int *readIntArray(int size, int capacity) {
+int *read_int_arr(int size, int capacity) {
     int *cars = (int*) malloc(sizeof(int) * capacity);
     for (int i = 0; i < size; i++) {
-        cars[i] = readInt();
+        cars[i] = read_int();
     }
     return cars;
 }
