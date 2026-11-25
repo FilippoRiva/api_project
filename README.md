@@ -1,1 +1,1 @@
-My "Algoritmi e Principi Dell'Informatica" Project from 2023. 
+My proposed solution for the Algoritmi e Principi dell'Informatica (Polimi course) 2023 Project
